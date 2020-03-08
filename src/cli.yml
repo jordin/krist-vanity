@@ -1,0 +1,29 @@
+name: krist-vanity
+version: "1.0"
+author: JordAn Jim
+about: Does awesome things
+args:
+    - WORK_SIZE:
+        short: w
+        long: work_size
+        help: The max work size for your gpu to chunk it up with
+        takes_value: true
+    - GPU:
+        short: g
+        long: gpu
+        help: The index of the gpu you want to run it on
+        takes_value: true
+    - BASE:
+        short: b
+        long: base
+        help: The starting address for the scanning.
+        takes_value: true
+    - ITERATIONS:
+        short: i
+        long: iterations
+        help: The number of iterations to do per loopdy loop
+        takes_value: true
+    - ADDRESS:
+        help: The desired address to find
+        required: true
+        index: 1
