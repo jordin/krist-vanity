@@ -8,7 +8,7 @@ use colored::*;
 use ocl::*;
 use ocl::builders::DeviceSpecifier;
 
-fn find_address(address: &str, work_size: u64, iterations: u64, mut base: u64, device: Device) -> ocl::Result<u64> {
+fn find_address(address: &str, work_size: u64, iterations: u64, mut base: u64, device_spec: DeviceSpecifier) -> ocl::Result<u64> {
     let src = format!(
         "#define DESIRED_LENGTH {}\n#define DESIRED_ADDRESS {}\n#define ITERATIONS {}\n{}\n{}",
         address.len(),
@@ -22,7 +22,7 @@ fn find_address(address: &str, work_size: u64, iterations: u64, mut base: u64, d
         include_str!("./vanity_gen.cl")
     );
 
-    let pro_que = ProQue::builder().src(src).dims(1usize).device(DeviceSpecifier::Single(device)).build()?;
+    let pro_que = ProQue::builder().src(src).dims(1usize).device(device_spec).build()?;
     let solution_buffer = pro_que.create_buffer::<u64>()?;
 
     let kernel = pro_que
@@ -69,7 +69,7 @@ fn main() {
         .unwrap_or(262144);
     let device_id = matches
         .value_of("GPU")
-        .and_then(|str_gpu| str_gpu.parse::<usize>().ok())
+        .and_then(|str_gpu| str_gpu.parse::<isize>().ok())
         .unwrap_or(0);
     let iterations = matches
         .value_of("ITERATIONS")
@@ -83,10 +83,18 @@ fn main() {
         .value_of("ADDRESS")
         .expect("Please provide an address");
 
-    let platform = Platform::first().unwrap();
-    let devices = Device::list_all(platform).unwrap();
+    let device_spec = if device_id < 0 {
+        DeviceSpecifier::All
+    } else {
+        let devices: Vec<Device> = Platform::list()
+            .iter()
+            .flat_map(|platform| Device::list_all(platform).unwrap_or(vec![]))
+            .collect();
 
-    let found_password = find_address(target_address, work_size, iterations, base_address, devices[device_id])
+        DeviceSpecifier::Single(devices[device_id as usize])
+    };
+
+    let found_password = find_address(target_address, work_size, iterations, base_address, device_spec)
         .expect("Error occured when computing with OpenCL");
 
     println!(
